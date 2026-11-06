@@ -25,6 +25,12 @@ LOCAL_PROFILES = {
     "local-air-121": dict(
         name="Air: Solent Radar + 121.5 emergency (120-122 MHz)", center_freq=int(121.3 * MHZ),
         samp_rate=2400000, start_freq=121500000, start_mod="am", tuning_step="5000", rf_gain=40),
+    "local-air-lon-128": dict(
+        name="Air: London Control Hurn (127.5-129.7 MHz)", center_freq=int(128.625 * MHZ),
+        samp_rate=2400000, start_freq=129425000, start_mod="am", tuning_step="5000", rf_gain=40),
+    "local-air-lon-135": dict(
+        name="Air: London Control Hurn East + BOH ATIS (133.7-135.8 MHz)", center_freq=int(134.75 * MHZ),
+        samp_rate=2400000, start_freq=135050000, start_mod="am", tuning_step="5000", rf_gain=40),
     "local-marine": dict(
         name="Marine VHF (ch 16, Poole, Solent)", center_freq=int(156.6 * MHZ),
         samp_rate=2400000, start_freq=156800000, start_mod="nfm", tuning_step="5000", rf_gain=40),

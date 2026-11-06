@@ -32,3 +32,7 @@
 
 - Aviation 8.33 kHz channel names are converted to carrier frequencies (e.g. 119.480 -> 119.4750 MHz); bookmarks and profile start frequencies corrected.
 - Filter widths follow channel spacing: +/-3.5 kHz for 8.33 kHz channels, +/-6 kHz for 25 kHz airband, +/-7.5 kHz marine NFM, +/-5 kHz PMR446. Override with bw=.
+
+## 0.0.7-alpha
+
+- London Control (Hurn sectors) band profiles 127.5-129.7 and 133.7-135.8 MHz, and bookmarks (frequencies from scanner listings - verify).

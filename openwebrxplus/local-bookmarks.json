@@ -1,13 +1,100 @@
 [
-  {"name": "BOH Tower", "frequency": 125600000, "modulation": "am", "description": "Bournemouth (Hurn) Tower, channel 125.605 (8.33)"},
-  {"name": "BOH Radar", "frequency": 119475000, "modulation": "am", "description": "Bournemouth Approach/Radar, channel 119.480 (8.33)"},
-  {"name": "BOH Director", "frequency": 118650000, "modulation": "am", "description": "Bournemouth Director, channel 118.655 (8.33)"},
-  {"name": "BOH Ground", "frequency": 121700000, "modulation": "am", "description": "Bournemouth Ground, channel 121.705 (8.33)"},
-  {"name": "BOH ATIS", "frequency": 133725000, "modulation": "am", "description": "Bournemouth ATIS, channel 133.730 (8.33)", "scannable": false},
-  {"name": "SOU Tower", "frequency": 118200000, "modulation": "am", "description": "Southampton Tower, channel 118.205 (8.33)"},
-  {"name": "Solent Radar", "frequency": 120225000, "modulation": "am", "description": "Solent Radar, channel 120.230 (8.33)"},
-  {"name": "SOU Radar", "frequency": 122725000, "modulation": "am", "description": "Southampton Radar, channel 122.730 (8.33)"},
-  {"name": "SOU ATIS", "frequency": 130875000, "modulation": "am", "description": "Southampton ATIS, channel 130.880 (8.33)", "scannable": false},
-  {"name": "2m FM call", "frequency": 145500000, "modulation": "nfm", "description": "2 m FM simplex calling channel"},
-  {"name": "70cm FM call", "frequency": 433500000, "modulation": "nfm", "description": "70 cm FM simplex calling channel"}
+  {
+    "name": "BOH Tower",
+    "frequency": 125600000,
+    "modulation": "am",
+    "description": "Bournemouth (Hurn) Tower, channel 125.605 (8.33)"
+  },
+  {
+    "name": "BOH Radar",
+    "frequency": 119475000,
+    "modulation": "am",
+    "description": "Bournemouth Approach/Radar, channel 119.480 (8.33)"
+  },
+  {
+    "name": "BOH Director",
+    "frequency": 118650000,
+    "modulation": "am",
+    "description": "Bournemouth Director, channel 118.655 (8.33)"
+  },
+  {
+    "name": "BOH Ground",
+    "frequency": 121700000,
+    "modulation": "am",
+    "description": "Bournemouth Ground, channel 121.705 (8.33)"
+  },
+  {
+    "name": "BOH ATIS",
+    "frequency": 133725000,
+    "modulation": "am",
+    "description": "Bournemouth ATIS, channel 133.730 (8.33)",
+    "scannable": false
+  },
+  {
+    "name": "SOU Tower",
+    "frequency": 118200000,
+    "modulation": "am",
+    "description": "Southampton Tower, channel 118.205 (8.33)"
+  },
+  {
+    "name": "Solent Radar",
+    "frequency": 120225000,
+    "modulation": "am",
+    "description": "Solent Radar, channel 120.230 (8.33)"
+  },
+  {
+    "name": "SOU Radar",
+    "frequency": 122725000,
+    "modulation": "am",
+    "description": "Southampton Radar, channel 122.730 (8.33)"
+  },
+  {
+    "name": "SOU ATIS",
+    "frequency": 130875000,
+    "modulation": "am",
+    "description": "Southampton ATIS, channel 130.880 (8.33)",
+    "scannable": false
+  },
+  {
+    "name": "2m FM call",
+    "frequency": 145500000,
+    "modulation": "nfm",
+    "description": "2 m FM simplex calling channel"
+  },
+  {
+    "name": "70cm FM call",
+    "frequency": 433500000,
+    "modulation": "nfm",
+    "description": "70 cm FM simplex calling channel"
+  },
+  {
+    "name": "LON Hurn West",
+    "frequency": 129425000,
+    "modulation": "am",
+    "description": "London Control Hurn West (S20/21) 129.425 - listing, verify"
+  },
+  {
+    "name": "LON Hurn East",
+    "frequency": 135050000,
+    "modulation": "am",
+    "description": "London Control Hurn East (S19) 135.050 - listing, verify"
+  },
+  {
+    "name": "LON S22",
+    "frequency": 127825000,
+    "modulation": "am",
+    "description": "London Control S22 127.825 - listing, verify"
+  },
+  {
+    "name": "LON Hurn Low",
+    "frequency": 132300000,
+    "modulation": "am",
+    "description": "London Control Hurn Low (S21) 132.300 - listing, verify"
+  },
+  {
+    "name": "LON S20?",
+    "frequency": 134450000,
+    "modulation": "am",
+    "description": "London Control S20 channel 134.455 (8.33) - one listing only"
+  }
 ]
