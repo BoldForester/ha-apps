@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Stream one OpenWebRX+ channel as MP3 over HTTP (for Home Assistant / Google Cast).
 
-GET /stream.mp3?freq=119480000&mod=am[&squelch=auto|-55][&margin=7][&force=1]
+GET /stream.mp3?freq=119480000&mod=am[&squelch=auto|-55][&margin=7][&bw=7000][&force=1]
+    freq may be an aviation channel name (8.33 kHz names are converted to the carrier).
 GET /status
 
 The helper joins OpenWebRX+ as an ordinary (hidden) listener.
@@ -32,7 +33,37 @@ CHUNK_S = 0.05                    # pacing interval (s)
 SETTINGS = "/data/owrx/settings.json"
 DEFAULT_SQUELCH = float(os.environ.get("STREAM_SQUELCH", "-150"))
 BAND_FRACTION = 0.9              # usable share of the band either side of centre
-BANDWIDTH = {"am": 4000, "nfm": 5000, "usb": 2700, "lsb": 2700, "sam": 4000}
+BANDWIDTH = {"am": 4000, "nfm": 7500, "usb": 2700, "lsb": 2700, "sam": 4000}
+
+
+def airband_channel(hz):
+    """Aviation channel name -> (carrier Hz, half-bandwidth Hz).
+
+    VHF airband (118-137 MHz) channel names ending .x05/.x10/.x15 (and .x30/.x35/.x40
+    etc.) are 8.33 kHz channels: carrier = 25 kHz block + 0 / 8.333 / 16.667 kHz.
+    Names on the 25 kHz raster are 25 kHz channels (carrier = name).
+    """
+    khz = int(round(hz / 1000.0))
+    if not 118000 <= khz <= 137000:
+        return None
+    r = khz % 25
+    base = khz - r
+    if r == 0:
+        return base * 1000, 6000                       # 25 kHz channel
+    if r in (5, 10, 15):
+        return int(round(base * 1000 + (r // 5 - 1) * 25000 / 3.0)), 3500   # 8.33 kHz channel
+    return None
+
+
+def channel_plan(hz, mod):
+    """(tuning Hz, half-bandwidth Hz) for a requested channel/frequency."""
+    if mod in ("am", "sam"):
+        ab = airband_channel(hz)
+        if ab:
+            return ab
+    if mod == "nfm" and 446000000 <= hz <= 446200000:  # PMR446, 12.5 kHz channels
+        return hz, 5000
+    return hz, BANDWIDTH.get(mod, 4000)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s sdr-stream %(levelname)s %(message)s")
 log = logging.getLogger("sdr-stream")
@@ -147,9 +178,12 @@ def find_profile(freq):
 
 
 class Session:
-    def __init__(self, freq, mod, squelch, force, margin=7.0):
+    def __init__(self, freq, mod, squelch, force, margin=7.0, bw=None):
         # squelch None = automatic: measure the noise floor, then add margin (dB)
-        self.freq, self.mod, self.squelch, self.force = freq, mod, squelch, force
+        self.channel = freq                          # what was asked for (e.g. 8.33 channel name)
+        tune, half_bw = channel_plan(freq, mod)
+        self.freq, self.mod, self.squelch, self.force = tune, mod, squelch, force
+        self.half_bw = int(bw) if bw else half_bw
         self.margin = margin
         self.smeter = []
         self.ws = None
@@ -240,7 +274,7 @@ class Session:
         else:
             self.profile = (self.config.get("sdr_id"), self.config.get("profile_id"))
 
-        bw = BANDWIDTH.get(self.mod, 4000)
+        bw = self.half_bw
         auto = self.squelch is None
         self._send({"type": "dspcontrol", "params": {
             "low_cut": -bw, "high_cut": bw,
@@ -262,7 +296,8 @@ class Session:
             self._send({"type": "dspcontrol", "params": {"squelch_level": self.squelch}})
         with STATE_LOCK:
             SESSIONS.append(self)
-        note("streaming %.4f MHz %s (squelch %s)" % (self.freq / 1e6, self.mod, self.squelch))
+        note("streaming channel %.3f -> %.5f MHz %s +/-%d Hz (squelch %s)"
+             % (self.channel / 1e6, self.freq / 1e6, self.mod, self.half_bw, self.squelch))
 
     def receive_loop(self):
         self.ws.settimeout(1)
@@ -359,7 +394,8 @@ class Handler(BaseHTTPRequestHandler):
         q = {k: v[-1] for k, v in parse_qs(url.query).items()}
         if url.path == "/status":
             with STATE_LOCK:
-                active = [{"freq_mhz": s.freq / 1e6, "mod": s.mod, "profile": s.profile and s.profile[1],
+                active = [{"channel": "%.3f" % (s.channel / 1e6), "freq_mhz": round(s.freq / 1e6, 6),
+                           "mod": s.mod, "filter_hz": 2 * s.half_bw, "profile": s.profile and s.profile[1],
                            "squelch_db": s.squelch,
                            "since": time.strftime("%H:%M:%S", time.localtime(s.started)),
                            "other_listeners": max((s.clients or 1) - 1, 0)} for s in SESSIONS]
@@ -380,7 +416,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "squelch must be 'auto' or a number (dB)"})
         force = q.get("force", "0") in ("1", "true", "yes")
 
-        session = Session(freq, mod, squelch, force, margin)
+        bw = q.get("bw")
+        session = Session(freq, mod, squelch, force, margin, float(bw) / 2 if bw else None)
         try:
             session.open()
         except Busy as e:

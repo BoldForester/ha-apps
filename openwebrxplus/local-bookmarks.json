@@ -1,13 +1,13 @@
 [
-  {"name": "BOH Tower", "frequency": 125605000, "modulation": "am", "description": "Bournemouth (Hurn) Tower"},
-  {"name": "BOH Radar", "frequency": 119480000, "modulation": "am", "description": "Bournemouth Approach/Radar"},
-  {"name": "BOH Director", "frequency": 118655000, "modulation": "am", "description": "Bournemouth Director"},
-  {"name": "BOH Ground", "frequency": 121705000, "modulation": "am", "description": "Bournemouth Ground"},
-  {"name": "BOH ATIS", "frequency": 133730000, "modulation": "am", "description": "Bournemouth ATIS (recorded weather)", "scannable": false},
-  {"name": "SOU Tower", "frequency": 118205000, "modulation": "am", "description": "Southampton Tower"},
-  {"name": "Solent Radar", "frequency": 120230000, "modulation": "am", "description": "Solent Radar (Southampton approach)"},
-  {"name": "SOU Radar", "frequency": 122730000, "modulation": "am", "description": "Southampton Radar"},
-  {"name": "SOU ATIS", "frequency": 130880000, "modulation": "am", "description": "Southampton ATIS (recorded weather)", "scannable": false},
+  {"name": "BOH Tower", "frequency": 125600000, "modulation": "am", "description": "Bournemouth (Hurn) Tower, channel 125.605 (8.33)"},
+  {"name": "BOH Radar", "frequency": 119475000, "modulation": "am", "description": "Bournemouth Approach/Radar, channel 119.480 (8.33)"},
+  {"name": "BOH Director", "frequency": 118650000, "modulation": "am", "description": "Bournemouth Director, channel 118.655 (8.33)"},
+  {"name": "BOH Ground", "frequency": 121700000, "modulation": "am", "description": "Bournemouth Ground, channel 121.705 (8.33)"},
+  {"name": "BOH ATIS", "frequency": 133725000, "modulation": "am", "description": "Bournemouth ATIS, channel 133.730 (8.33)", "scannable": false},
+  {"name": "SOU Tower", "frequency": 118200000, "modulation": "am", "description": "Southampton Tower, channel 118.205 (8.33)"},
+  {"name": "Solent Radar", "frequency": 120225000, "modulation": "am", "description": "Solent Radar, channel 120.230 (8.33)"},
+  {"name": "SOU Radar", "frequency": 122725000, "modulation": "am", "description": "Southampton Radar, channel 122.730 (8.33)"},
+  {"name": "SOU ATIS", "frequency": 130875000, "modulation": "am", "description": "Southampton ATIS, channel 130.880 (8.33)", "scannable": false},
   {"name": "2m FM call", "frequency": 145500000, "modulation": "nfm", "description": "2 m FM simplex calling channel"},
   {"name": "70cm FM call", "frequency": 433500000, "modulation": "nfm", "description": "70 cm FM simplex calling channel"}
 ]

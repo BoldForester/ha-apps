@@ -18,10 +18,10 @@ MHZ = 1_000_000
 LOCAL_PROFILES = {
     "local-air-bournemouth": dict(
         name="Air: Bournemouth Tower (124-126 MHz)", center_freq=int(125.0 * MHZ),
-        samp_rate=2400000, start_freq=125605000, start_mod="am", tuning_step="5000", rf_gain=40),
+        samp_rate=2400000, start_freq=125600000, start_mod="am", tuning_step="5000", rf_gain=40),
     "local-air-118": dict(
         name="Air: Southampton Tower + Bournemouth Radar (118-120 MHz)", center_freq=int(119.0 * MHZ),
-        samp_rate=2400000, start_freq=119480000, start_mod="am", tuning_step="5000", rf_gain=40),
+        samp_rate=2400000, start_freq=119475000, start_mod="am", tuning_step="5000", rf_gain=40),
     "local-air-121": dict(
         name="Air: Solent Radar + 121.5 emergency (120-122 MHz)", center_freq=int(121.3 * MHZ),
         samp_rate=2400000, start_freq=121500000, start_mod="am", tuning_step="5000", rf_gain=40),
@@ -49,7 +49,14 @@ def main():
         return
     profiles = rtl.setdefault("profiles", {})
     added = [pid for pid in LOCAL_PROFILES if pid not in profiles]
-    if not added:
+    # 0.0.6 fix: earlier versions used 8.33 kHz channel names as start frequencies.
+    fixed = []
+    for pid, wrong, right in (("local-air-bournemouth", 125605000, 125600000),
+                              ("local-air-118", 119480000, 119475000)):
+        if pid in profiles and profiles[pid].get("start_freq") == wrong:
+            profiles[pid]["start_freq"] = right
+            fixed.append(pid)
+    if not added and not fixed:
         print("+++ add-profiles: local profiles already present")
         return
     for pid in added:
@@ -61,7 +68,7 @@ def main():
     with open(tmp, "w") as f:
         json.dump(settings, f, indent=4)
     os.replace(tmp, SETTINGS)
-    print("+++ add-profiles: added " + ", ".join(added))
+    print("+++ add-profiles: added %s; fixed start freq %s" % (", ".join(added) or "none", ", ".join(fixed) or "none"))
 
 
 if __name__ == "__main__":
