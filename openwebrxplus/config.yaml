@@ -1,0 +1,25 @@
+name: OpenWebRX+
+version: "0.0.1-alpha"
+slug: openwebrxplus
+description: EXTREME ALPHA - untested personal wrapper. Web-based SDR receiver (OpenWebRX+) for a USB RTL-SDR, using the slechev/openwebrxplus image.
+url: https://github.com/0xAF/openwebrxplus-docker-builder
+arch:
+  - aarch64
+  - amd64
+stage: experimental
+startup: application
+boot: auto
+init: false
+usb: true
+ports:
+  8073/tcp: 8073
+ports_description:
+  8073/tcp: OpenWebRX+ web interface
+webui: "http://[HOST]:[PORT:8073]/"
+options:
+  admin_user: admin
+  timezone: Europe/London
+schema:
+  admin_user: str
+  admin_password: password?
+  timezone: str
