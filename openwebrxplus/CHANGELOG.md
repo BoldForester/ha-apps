@@ -17,3 +17,9 @@
 - Sharing rules: never changes band while people are listening or another stream
   holds a different band (HTTP 409 "busy") unless `force=1`; a stream stops if a
   person changes the band. Quiet/squelched periods are filled with silence.
+
+## 0.0.4-alpha
+
+- Automatic squelch (default): the stream measures the channel's noise floor for ~2 s
+  and sets squelch `margin` dB above it (default 7). Use `squelch=-34` for a fixed level.
+- /status shows the squelch in use.

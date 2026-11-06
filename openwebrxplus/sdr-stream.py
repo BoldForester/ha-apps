@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stream one OpenWebRX+ channel as MP3 over HTTP (for Home Assistant / Google Cast).
 
-GET /stream.mp3?freq=119480000&mod=am[&squelch=-55][&force=1]
+GET /stream.mp3?freq=119480000&mod=am[&squelch=auto|-55][&margin=7][&force=1]
 GET /status
 
 The helper joins OpenWebRX+ as an ordinary (hidden) listener.
@@ -14,6 +14,7 @@ Sharing rules ("the lock"):
   (people win over streams).
 """
 import json
+import math
 import logging
 import os
 import subprocess
@@ -145,8 +146,11 @@ def find_profile(freq):
 
 
 class Session:
-    def __init__(self, freq, mod, squelch, force):
+    def __init__(self, freq, mod, squelch, force, margin=7.0):
+        # squelch None = automatic: measure the noise floor, then add margin (dB)
         self.freq, self.mod, self.squelch, self.force = freq, mod, squelch, force
+        self.margin = margin
+        self.smeter = []
         self.ws = None
         self.config = {}
         self.clients = None
@@ -178,6 +182,9 @@ class Session:
                 self.stop_reason = "band changed by another listener"
         elif t == "clients":
             self.clients = j.get("value")
+        elif t == "smeter":
+            v = j.get("value") or 0
+            self.smeter.append(10 * math.log10(v) if v > 0 else -150.0)
 
     def _in_band(self):
         c, sr = self.config.get("center_freq"), self.config.get("samp_rate")
@@ -233,11 +240,25 @@ class Session:
             self.profile = (self.config.get("sdr_id"), self.config.get("profile_id"))
 
         bw = BANDWIDTH.get(self.mod, 4000)
+        auto = self.squelch is None
         self._send({"type": "dspcontrol", "params": {
             "low_cut": -bw, "high_cut": bw,
             "offset_freq": int(self.freq - self.config["center_freq"]),
-            "mod": self.mod, "squelch_level": self.squelch}})
+            "mod": self.mod, "squelch_level": -150 if auto else self.squelch}})
         self._send({"type": "dspcontrol", "action": "start"})
+        if auto:
+            # Measure the channel's noise floor (~2 s), then set squelch a margin above it.
+            self.smeter = []
+            self._wait(lambda: len(self.smeter) >= 8, 3)
+            if self.smeter:
+                floor = min(self.smeter)
+                self.squelch = round(floor + self.margin, 1)
+                note("auto squelch %.4f MHz: noise %.1f dB -> squelch %.1f dB"
+                     % (self.freq / 1e6, floor, self.squelch))
+            else:
+                self.squelch = -150
+                note("auto squelch: no S-meter readings, squelch left open")
+            self._send({"type": "dspcontrol", "params": {"squelch_level": self.squelch}})
         with STATE_LOCK:
             SESSIONS.append(self)
         note("streaming %.4f MHz %s (squelch %s)" % (self.freq / 1e6, self.mod, self.squelch))
@@ -338,6 +359,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/status":
             with STATE_LOCK:
                 active = [{"freq_mhz": s.freq / 1e6, "mod": s.mod, "profile": s.profile and s.profile[1],
+                           "squelch_db": s.squelch,
                            "since": time.strftime("%H:%M:%S", time.localtime(s.started)),
                            "other_listeners": max((s.clients or 1) - 1, 0)} for s in SESSIONS]
             return self._json(200, {"streaming": bool(active), "streams": active,
@@ -349,10 +371,15 @@ class Handler(BaseHTTPRequestHandler):
         except (KeyError, ValueError):
             return self._json(400, {"error": "freq (Hz) is required"})
         mod = q.get("mod", "am").lower()
-        squelch = float(q.get("squelch", DEFAULT_SQUELCH))
+        sq = q.get("squelch", "auto").lower()
+        try:
+            squelch = None if sq == "auto" else float(sq)
+            margin = float(q.get("margin", 7))
+        except ValueError:
+            return self._json(400, {"error": "squelch must be 'auto' or a number (dB)"})
         force = q.get("force", "0") in ("1", "true", "yes")
 
-        session = Session(freq, mod, squelch, force)
+        session = Session(freq, mod, squelch, force, margin)
         try:
             session.open()
         except Busy as e:
