@@ -40,3 +40,8 @@
 ## 0.0.8-alpha
 
 - Auto squelch now = 95th percentile of ~3 s of channel noise + margin (default 2 dB), instead of the quietest reading + 7 dB. Keeps noise shut while letting weak calls through. If a call is on air during measurement, the median is used.
+
+## 0.0.9-alpha
+
+- Full-range sweep: `/sweep/start?start=24&stop=1700&step=2&dwell=2&threshold=10`, `/sweep` (progress/results), `/sweep/stop`. Logs every signal above the noise with band name, on-air share and possible receiver spurs (28.8 MHz harmonics). Only starts when nobody is listening; stops if someone connects; restores the band profile afterwards. Results kept in /data/sweep-latest.json.
+- Enables OpenWebRX+ free tuning (`allow_center_freq_changes`), needed by the sweep. Option `allow_retune` (default true).

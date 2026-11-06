@@ -247,6 +247,11 @@ class Session:
                 raise RuntimeError("OpenWebRX+ did not send its configuration")
         others = max((self.clients or 1) - 1, 0)
 
+        if SWEEP.running:
+            if not self.force:
+                raise Busy("a frequency sweep is running (%s); use force=1 to stop it" % SWEEP.progress())
+            SWEEP.stop("stopped by a forced stream")
+            time.sleep(1.5)
         with STATE_LOCK:
             holders = [s for s in SESSIONS if s.profile and not s.stop_reason]
         if not self._in_band():
@@ -380,6 +385,206 @@ class Session:
             note("stream %.4f MHz ended: %s" % (self.freq / 1e6, self.stop_reason))
 
 
+
+# --------------------------------------------------------------------------
+# Full-range sweep (uses OpenWebRX+ waterfall frames; needs allow_center_freq_changes)
+# --------------------------------------------------------------------------
+UK_BANDS = [
+    (26.965, 27.991, "CB 27 MHz"), (28.0, 29.7, "10 m amateur"), (50.0, 52.0, "6 m amateur"),
+    (70.0, 70.5, "4 m amateur"), (87.5, 108.0, "FM broadcast"), (108.0, 117.975, "VOR/ILS navigation"),
+    (118.0, 137.0, "VHF airband"), (137.0, 138.0, "weather satellites"), (138.0, 144.0, "military/PMR"),
+    (144.0, 146.0, "2 m amateur"), (146.0, 156.0, "PMR/business/paging"), (156.0, 162.05, "marine VHF (incl. AIS 161.975/162.025)"),
+    (162.05, 174.0, "business radio"), (174.0, 240.0, "DAB digital radio"), (225.0, 400.0, "military UHF airband"),
+    (380.0, 400.0, "TETRA (emergency services, encrypted)"), (400.0, 430.0, "PMR/telemetry"),
+    (430.0, 440.0, "70 cm amateur"), (433.05, 434.79, "433 MHz ISM devices"), (440.0, 470.0, "PMR/business (446 = PMR446)"),
+    (470.0, 790.0, "digital TV (DVB-T)"), (790.0, 862.0, "4G 800 mobile"), (863.0, 870.0, "868 MHz ISM devices"),
+    (870.0, 960.0, "GSM/4G 900 mobile"), (960.0, 1215.0, "aeronautical radionavigation (DME, SSR 1030, ADS-B 1090)"),
+    (1215.0, 1300.0, "GNSS L2 / 23 cm"), (1300.0, 1350.0, "radar"), (1525.0, 1559.0, "Inmarsat"),
+    (1559.0, 1610.0, "GNSS L1 (GPS/Galileo)"), (1610.0, 1700.0, "satellite / meteorological"),
+]
+
+
+def band_name(mhz):
+    names = [n for lo, hi, n in UK_BANDS if lo <= mhz <= hi]
+    return names[-1] if names else "other"
+
+
+class Sweeper:
+    RESULT = "/data/sweep-latest.json"
+
+    def __init__(self):
+        self.running = False
+        self.thread = None
+        self.stop_reason = None
+        self.params = {}
+        self.current = None
+        self.started = None
+        self.hits = []
+        self.steps_done = 0
+        self.steps_total = 0
+
+    def progress(self):
+        if not self.running:
+            return "idle"
+        return "%d/%d steps, at %.1f MHz" % (self.steps_done, self.steps_total, (self.current or 0) / 1e6)
+
+    def start(self, start_mhz, stop_mhz, step_mhz, dwell_s, threshold_db):
+        if self.running:
+            raise Busy("sweep already running (%s)" % self.progress())
+        with STATE_LOCK:
+            if SESSIONS:
+                raise Busy("a stream is playing; stop it first")
+        self.params = dict(start_mhz=start_mhz, stop_mhz=stop_mhz, step_mhz=step_mhz,
+                           dwell_s=dwell_s, threshold_db=threshold_db)
+        self.stop_reason = None
+        self.hits = []
+        self.steps_done = 0
+        self.steps_total = int((stop_mhz - start_mhz) / step_mhz) + 1
+        self.running = True
+        self.started = time.time()
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+
+    def stop(self, reason):
+        self.stop_reason = reason
+
+    def _run(self):
+        ws = None
+        try:
+            ws = websocket.create_connection(OWRX_WS, timeout=10)
+            ws.send("SERVER DE CLIENT client=ha-sdr-sweep type=receiver")
+            ws.send(json.dumps({"type": "connectionproperties", "params": {"output_rate": RATE, "hd_output_rate": 48000}}))
+            cfg, clients = {}, [None]
+
+            def pump(timeout, want_fft=False):
+                frames = []
+                end = time.time() + timeout
+                while time.time() < end:
+                    ws.settimeout(max(0.05, end - time.time()))
+                    try:
+                        m = ws.recv()
+                    except websocket.WebSocketTimeoutException:
+                        break
+                    if isinstance(m, str):
+                        if m.startswith("{"):
+                            j = json.loads(m)
+                            if j.get("type") == "config":
+                                cfg.update(j.get("value", {}))
+                            elif j.get("type") == "clients":
+                                clients[0] = j.get("value")
+                    elif want_fft and m and m[0] == 0x01:
+                        frames.append(m[1:])
+                return frames
+
+            pump(3)
+            if "center_freq" not in cfg:
+                raise RuntimeError("no configuration from OpenWebRX+")
+            if (clients[0] or 1) > 1:
+                raise Busy("people are listening; sweep not started")
+            original = "%s|%s" % (cfg.get("sdr_id"), cfg.get("profile_id"))
+            note("sweep started %.1f-%.1f MHz (from profile %s)"
+                 % (self.params["start_mhz"], self.params["stop_mhz"], original))
+            f = self.params["start_mhz"] * 1e6
+            try:
+                while f <= self.params["stop_mhz"] * 1e6 and not self.stop_reason:
+                    self.current = f
+                    ws.send(json.dumps({"type": "setfrequency", "params": {"frequency": int(f), "key": ""}}))
+                    end = time.time() + 3
+                    while time.time() < end and cfg.get("center_freq") != int(f):
+                        pump(0.2)
+                    if cfg.get("center_freq") != int(f):
+                        raise RuntimeError("radio would not retune to %.1f MHz "
+                                           "(allow_center_freq_changes off?)" % (f / 1e6))
+                    pump(0.5)                                    # settle
+                    raw = pump(self.params["dwell_s"], want_fft=True)
+                    if (clients[0] or 1) > 1:
+                        self.stop_reason = "someone started listening"
+                        break
+                    self._analyse(raw, cfg)
+                    self.steps_done += 1
+                    f += self.params["step_mhz"] * 1e6
+            finally:
+                try:
+                    ws.send(json.dumps({"type": "selectprofile", "params": {"profile": original}}))
+                    pump(1)
+                except Exception:
+                    pass
+        except Exception as e:
+            self.stop_reason = self.stop_reason or str(e)
+        finally:
+            try:
+                ws and ws.close()
+            except Exception:
+                pass
+            self.running = False
+            self._save()
+            note("sweep finished: %d steps, %d signals%s" % (
+                self.steps_done, len(self.hits), (" (" + self.stop_reason + ")") if self.stop_reason else ""))
+
+    def _analyse(self, raw, cfg):
+        if not raw:
+            return
+        comp = cfg.get("fft_compression", "adpcm") == "adpcm"
+        frames = []
+        for p in raw:
+            if comp:
+                d = AdpcmDecoder()
+                d.step = 0
+                pcm = bytearray()
+                for b in p:
+                    for n in (b & 0x0F, b >> 4):
+                        pcm += d._nibble(n).to_bytes(2, "little", signed=True)
+                vals = [int.from_bytes(pcm[i:i + 2], "little", signed=True) / 100.0 for i in range(20, len(pcm), 2)]
+            else:
+                import struct
+                vals = list(struct.unpack("<%df" % (len(p) // 4), p))
+            frames.append(vals)
+        n = min(len(v) for v in frames)
+        c, sr = cfg["center_freq"], cfg["samp_rate"]
+        cols = list(zip(*[v[:n] for v in frames]))
+        med = [sorted(col)[len(col) // 2] for col in cols]
+        mx = [max(col) for col in cols]
+        floor = sorted(med)[len(med) // 2]
+        thr = self.params["threshold_db"]
+        groups = []
+        for i in range(n):
+            hz = c - sr / 2 + (i + 0.5) * sr / n
+            if abs(hz - c) < 8000 or abs(hz - c) > sr / 2 * 0.85:
+                continue
+            if mx[i] - floor < thr:
+                continue
+            duty = sum(1 for x in cols[i] if x - floor >= thr) / float(len(cols[i]))
+            item = (hz, mx[i] - floor, med[i] - floor, duty)
+            if groups and hz - groups[-1][-1][0] < 15000:
+                groups[-1].append(item)
+            else:
+                groups.append([item])
+        for g in groups:
+            hz, peak, medrel, duty = max(g, key=lambda x: x[1])
+            width = (g[-1][0] - g[0][0]) + sr / n
+            spur = any(abs(hz - k * 28.8e6) < 5000 for k in range(1, 62))
+            self.hits.append({
+                "mhz": round(hz / 1e6, 4), "peak_db": round(peak, 1), "typical_db": round(medrel, 1),
+                "on_air_pct": round(100 * duty), "width_khz": round(width / 1000, 1),
+                "kind": "steady" if duty > 0.8 else ("intermittent" if duty < 0.5 else "frequent"),
+                "band": band_name(hz / 1e6), "possible_receiver_spur": spur})
+
+    def _save(self):
+        try:
+            with open(self.RESULT, "w") as fh:
+                json.dump(self.result(), fh, indent=1)
+        except Exception as e:
+            log.warning("could not save sweep: %s", e)
+
+    def result(self):
+        return {"running": self.running, "progress": self.progress(), "params": self.params,
+                "started": self.started and time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.started)),
+                "stopped_because": self.stop_reason, "steps_done": self.steps_done,
+                "signals": sorted(self.hits, key=lambda h: h["mhz"])}
+
+
+SWEEP = Sweeper()
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "ha-sdr-stream/0.1"
 
@@ -406,6 +611,24 @@ class Handler(BaseHTTPRequestHandler):
                            "other_listeners": max((s.clients or 1) - 1, 0)} for s in SESSIONS]
             return self._json(200, {"streaming": bool(active), "streams": active,
                                     "last_event": LAST["event"], "last_event_time": LAST["time"]})
+        if url.path == "/sweep/start":
+            try:
+                SWEEP.start(float(q.get("start", 24)), float(q.get("stop", 1700)), float(q.get("step", 2.0)),
+                            float(q.get("dwell", 2.0)), float(q.get("threshold", 10)))
+            except Busy as e:
+                return self._json(409, {"error": "busy", "reason": str(e)})
+            return self._json(200, {"started": True, "steps": SWEEP.steps_total})
+        if url.path == "/sweep/stop":
+            SWEEP.stop("stopped on request")
+            return self._json(200, {"stopping": True})
+        if url.path in ("/sweep", "/sweep/status"):
+            if not SWEEP.running and not SWEEP.hits:
+                try:
+                    with open(Sweeper.RESULT) as fh:
+                        return self._json(200, json.load(fh))
+                except Exception:
+                    pass
+            return self._json(200, SWEEP.result())
         if url.path not in ("/stream.mp3", "/stream"):
             return self._json(404, {"error": "use /stream.mp3?freq=HZ&mod=am or /status"})
         try:

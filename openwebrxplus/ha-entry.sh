@@ -14,7 +14,8 @@ if [ -f "$OPTS" ]; then
   OPENWEBRX_ADMIN_PASSWORD="$(opt admin_password)"
   TZ="$(opt timezone)"
   ADD_LOCAL_PROFILES="$(python3 -c "import json; print(json.load(open('$OPTS')).get('add_local_profiles', True))")"
-  export OPENWEBRX_ADMIN_USER OPENWEBRX_ADMIN_PASSWORD TZ
+  ALLOW_RETUNE="$(python3 -c "import json; print(json.load(open('$OPTS')).get('allow_retune', True))")"
+  export OPENWEBRX_ADMIN_USER OPENWEBRX_ADMIN_PASSWORD TZ ALLOW_RETUNE
 fi
 
 # Persistent settings, users and receiver data live in /data/owrx.

@@ -62,7 +62,12 @@ def main():
         if pid in profiles and profiles[pid].get("start_freq") == wrong:
             profiles[pid]["start_freq"] = right
             fixed.append(pid)
-    if not added and not fixed:
+    # 0.0.9: allow free tuning (needed by the sweep; lets the web UI type any frequency).
+    retune = False
+    if os.environ.get("ALLOW_RETUNE", "True") != "False" and not settings.get("allow_center_freq_changes"):
+        settings["allow_center_freq_changes"] = True
+        retune = True
+    if not added and not fixed and not retune:
         print("+++ add-profiles: local profiles already present")
         return
     for pid in added:
@@ -74,7 +79,8 @@ def main():
     with open(tmp, "w") as f:
         json.dump(settings, f, indent=4)
     os.replace(tmp, SETTINGS)
-    print("+++ add-profiles: added %s; fixed start freq %s" % (", ".join(added) or "none", ", ".join(fixed) or "none"))
+    print("+++ add-profiles: added %s; fixed start freq %s; free tuning %s"
+          % (", ".join(added) or "none", ", ".join(fixed) or "none", "enabled" if retune else "unchanged"))
 
 
 if __name__ == "__main__":
