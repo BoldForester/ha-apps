@@ -21,7 +21,7 @@
 ## 0.0.4-alpha
 
 - Automatic squelch (default): the stream measures the channel's noise floor for ~2 s
-  and sets squelch `margin` dB above it (default 7). Use `squelch=-34` for a fixed level.
+  and sets squelch `margin` dB above the loud end (95th percentile) of the noise (default 2). Use `squelch=-34` for a fixed level.
 - /status shows the squelch in use.
 
 ## 0.0.5-alpha
@@ -36,3 +36,7 @@
 ## 0.0.7-alpha
 
 - London Control (Hurn sectors) band profiles 127.5-129.7 and 133.7-135.8 MHz, and bookmarks (frequencies from scanner listings - verify).
+
+## 0.0.8-alpha
+
+- Auto squelch now = 95th percentile of ~3 s of channel noise + margin (default 2 dB), instead of the quietest reading + 7 dB. Keeps noise shut while letting weak calls through. If a call is on air during measurement, the median is used.

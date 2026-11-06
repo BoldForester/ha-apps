@@ -1,5 +1,5 @@
 name: OpenWebRX+
-version: "0.0.7-alpha"
+version: "0.0.8-alpha"
 slug: openwebrxplus
 description: EXTREME ALPHA - untested personal wrapper. Web-based SDR receiver (OpenWebRX+) for a USB RTL-SDR, using the slechev/openwebrxplus image.
 url: https://github.com/0xAF/openwebrxplus-docker-builder

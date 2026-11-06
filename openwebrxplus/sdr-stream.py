@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stream one OpenWebRX+ channel as MP3 over HTTP (for Home Assistant / Google Cast).
 
-GET /stream.mp3?freq=119480000&mod=am[&squelch=auto|-55][&margin=7][&bw=7000][&force=1]
+GET /stream.mp3?freq=119480000&mod=am[&squelch=auto|-55][&margin=2][&bw=7000][&force=1]
     freq may be an aviation channel name (8.33 kHz names are converted to the carrier).
 GET /status
 
@@ -178,7 +178,7 @@ def find_profile(freq):
 
 
 class Session:
-    def __init__(self, freq, mod, squelch, force, margin=7.0, bw=None):
+    def __init__(self, freq, mod, squelch, force, margin=2.0, bw=None):
         # squelch None = automatic: measure the noise floor, then add margin (dB)
         self.channel = freq                          # what was asked for (e.g. 8.33 channel name)
         tune, half_bw = channel_plan(freq, mod)
@@ -282,14 +282,19 @@ class Session:
             "mod": self.mod, "squelch_level": -150 if auto else self.squelch}})
         self._send({"type": "dspcontrol", "action": "start"})
         if auto:
-            # Measure the channel's noise floor (~2 s), then set squelch a margin above it.
+            # Measure the channel noise (~3 s); squelch = loud end of the noise (95th
+            # percentile) + margin, so noise stays shut but weak calls still open it.
             self.smeter = []
-            self._wait(lambda: len(self.smeter) >= 8, 3)
+            self._wait(lambda: len(self.smeter) >= 12, 4)
             if self.smeter:
-                floor = min(self.smeter)
-                self.squelch = round(floor + self.margin, 1)
-                note("auto squelch %.4f MHz: noise %.1f dB -> squelch %.1f dB"
-                     % (self.freq / 1e6, floor, self.squelch))
+                d = sorted(self.smeter)
+                median = d[len(d) // 2]
+                top = d[min(len(d) - 1, int(0.95 * len(d)))]
+                if top - median > 6:      # a call was on air while measuring: trust the median
+                    top = median + 2
+                self.squelch = round(top + self.margin, 1)
+                note("auto squelch %.4f MHz: noise median %.1f / p95 %.1f dB -> squelch %.1f dB"
+                     % (self.freq / 1e6, median, top, self.squelch))
             else:
                 self.squelch = -150
                 note("auto squelch: no S-meter readings, squelch left open")
@@ -411,7 +416,7 @@ class Handler(BaseHTTPRequestHandler):
         sq = q.get("squelch", "auto").lower()
         try:
             squelch = None if sq == "auto" else float(sq)
-            margin = float(q.get("margin", 7))
+            margin = float(q.get("margin", 2))
         except ValueError:
             return self._json(400, {"error": "squelch must be 'auto' or a number (dB)"})
         force = q.get("force", "0") in ("1", "true", "yes")
