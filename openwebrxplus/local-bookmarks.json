@@ -1,0 +1,13 @@
+[
+  {"name": "BOH Tower", "frequency": 125605000, "modulation": "am", "description": "Bournemouth (Hurn) Tower"},
+  {"name": "BOH Radar", "frequency": 119480000, "modulation": "am", "description": "Bournemouth Approach/Radar"},
+  {"name": "BOH Director", "frequency": 118655000, "modulation": "am", "description": "Bournemouth Director"},
+  {"name": "BOH Ground", "frequency": 121705000, "modulation": "am", "description": "Bournemouth Ground"},
+  {"name": "BOH ATIS", "frequency": 133730000, "modulation": "am", "description": "Bournemouth ATIS (recorded weather)", "scannable": false},
+  {"name": "SOU Tower", "frequency": 118205000, "modulation": "am", "description": "Southampton Tower"},
+  {"name": "Solent Radar", "frequency": 120230000, "modulation": "am", "description": "Solent Radar (Southampton approach)"},
+  {"name": "SOU Radar", "frequency": 122730000, "modulation": "am", "description": "Southampton Radar"},
+  {"name": "SOU ATIS", "frequency": 130880000, "modulation": "am", "description": "Southampton ATIS (recorded weather)", "scannable": false},
+  {"name": "2m FM call", "frequency": 145500000, "modulation": "nfm", "description": "2 m FM simplex calling channel"},
+  {"name": "70cm FM call", "frequency": 433500000, "modulation": "nfm", "description": "70 cm FM simplex calling channel"}
+]

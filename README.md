@@ -11,7 +11,7 @@ Home Assistant app repository.
 
 | App | What it does |
 |---|---|
-| [OpenWebRX+](openwebrxplus) | Browser-based SDR receiver for a USB RTL-SDR, wrapping the [slechev/openwebrxplus](https://hub.docker.com/r/slechev/openwebrxplus) image. |
+| [OpenWebRX+](openwebrxplus) | Browser-based SDR receiver for a USB RTL-SDR, wrapping the [slechev/openwebrxplus](https://hub.docker.com/r/slechev/openwebrxplus) image. Adds local (Dorset/Hampshire) bookmarks, band profiles and the frequency-scanner plugin. |
 
 ## Install
 
