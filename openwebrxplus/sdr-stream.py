@@ -31,6 +31,7 @@ RATE = 12000                      # audio sample rate requested from OpenWebRX+
 CHUNK_S = 0.05                    # pacing interval (s)
 SETTINGS = "/data/owrx/settings.json"
 DEFAULT_SQUELCH = float(os.environ.get("STREAM_SQUELCH", "-150"))
+BAND_FRACTION = 0.9              # usable share of the band either side of centre
 BANDWIDTH = {"am": 4000, "nfm": 5000, "usb": 2700, "lsb": 2700, "sam": 4000}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s sdr-stream %(levelname)s %(message)s")
@@ -140,7 +141,7 @@ def find_profile(freq):
             if not c or not sr:
                 continue
             d = abs(freq - c)
-            if d <= sr / 2 * 0.85 and (best is None or d < best[0]):
+            if d <= sr / 2 * BAND_FRACTION and (best is None or d < best[0]):
                 best = (d, sid, pid, c, sr)
     return best[1:] if best else None
 
@@ -188,7 +189,7 @@ class Session:
 
     def _in_band(self):
         c, sr = self.config.get("center_freq"), self.config.get("samp_rate")
-        return c is not None and sr is not None and abs(self.freq - c) <= sr / 2 * 0.85
+        return c is not None and sr is not None and abs(self.freq - c) <= sr / 2 * BAND_FRACTION
 
     def _wait(self, cond, timeout):
         end = time.time() + timeout

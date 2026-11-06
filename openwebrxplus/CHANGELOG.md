@@ -23,3 +23,7 @@
 - Automatic squelch (default): the stream measures the channel's noise floor for ~2 s
   and sets squelch `margin` dB above it (default 7). Use `squelch=-34` for a fixed level.
 - /status shows the squelch in use.
+
+## 0.0.5-alpha
+
+- Accept frequencies up to 90% of the half-band from centre (was 85%), so 120.230 MHz is reachable on the 120-122 MHz airband profile.
