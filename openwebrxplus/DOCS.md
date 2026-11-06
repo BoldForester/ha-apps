@@ -14,3 +14,10 @@ Browser-based SDR receiver for the RTL-SDR Blog V3 on this Pi.
   the admin user is created on first start only. Settings page: `/settings`.
 - Only one program can use the SDR at a time: keep the rtl_433 app stopped.
 - Settings are stored in the app's /data folder, so they survive updates.
+
+## Speaker stream (port 8074)
+
+`http://<home-assistant-ip>:8074/stream.mp3?freq=119480000&mod=am&squelch=-55`
+plays one channel as MP3 (for Google Cast speakers via `media_player.play_media`).
+`/status` shows what is streaming. The stream will not change band while people are
+listening unless `force=1` is added; it stops if someone changes band in the web UI.

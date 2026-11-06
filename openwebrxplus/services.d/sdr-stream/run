@@ -1,0 +1,6 @@
+#!/command/with-contenv bash
+# MP3 stream helper for Home Assistant / Google Cast (port 8074).
+sleep 8   # let OpenWebRX+ start first
+STREAM_SQUELCH="$(python3 -c "import json; print(json.load(open('/data/options.json')).get('stream_squelch', -150))" 2>/dev/null || echo -150)"
+export STREAM_SQUELCH
+exec python3 /ha/sdr-stream.py
