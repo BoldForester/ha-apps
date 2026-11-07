@@ -45,3 +45,9 @@
 
 - Full-range sweep: `/sweep/start?start=24&stop=1700&step=2&dwell=2&threshold=10`, `/sweep` (progress/results), `/sweep/stop`. Logs every signal above the noise with band name, on-air share and possible receiver spurs (28.8 MHz harmonics). Only starts when nobody is listening; stops if someone connects; restores the band profile afterwards. Results kept in /data/sweep-latest.json.
 - Enables OpenWebRX+ free tuning (`allow_center_freq_changes`), needed by the sweep. Option `allow_retune` (default true).
+
+## 0.0.10-alpha
+
+- Admin login follows the app options: on every start the admin user is created if
+  missing, or its password is reset to `admin_password` (and the user re-enabled).
+  Fixes being locked out after forgetting or changing the password.

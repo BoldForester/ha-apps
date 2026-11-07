@@ -28,6 +28,27 @@ cat > /etc/openwebrx/openwebrx.conf.d/90-home-assistant.conf <<CONF
 data_directory = /data/owrx
 CONF
 
+# Admin login: the app options are the source of truth. The image only
+# creates the admin user when it doesn't exist, so a changed or forgotten
+# password would never take effect. Create the user if missing, otherwise
+# reset its password to the one in the app options, on every start.
+if [ -n "${OPENWEBRX_ADMIN_USER:-}" ] && [ -n "${OPENWEBRX_ADMIN_PASSWORD:-}" ]; then
+  if openwebrx admin --silent hasuser "$OPENWEBRX_ADMIN_USER" 2>/dev/null; then
+    if OWRX_PASSWORD="$OPENWEBRX_ADMIN_PASSWORD" openwebrx admin --noninteractive resetpassword "$OPENWEBRX_ADMIN_USER"; then
+      openwebrx admin --silent enableuser "$OPENWEBRX_ADMIN_USER" || true
+      echo "[ha] Admin password for '$OPENWEBRX_ADMIN_USER' set from the app options."
+    else
+      echo "[ha] WARNING: could not reset the admin password."
+    fi
+  else
+    if OWRX_PASSWORD="$OPENWEBRX_ADMIN_PASSWORD" openwebrx admin --noninteractive adduser "$OPENWEBRX_ADMIN_USER"; then
+      echo "[ha] Admin user '$OPENWEBRX_ADMIN_USER' created from the app options."
+    else
+      echo "[ha] WARNING: could not create the admin user."
+    fi
+  fi
+fi
+
 # Local bookmarks (Bournemouth/Southampton airband, calling channels).
 mkdir -p /etc/openwebrx/bookmarks.d
 cp /ha/local-bookmarks.json /etc/openwebrx/bookmarks.d/zz-local.json

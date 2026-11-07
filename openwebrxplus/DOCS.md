@@ -10,8 +10,11 @@
 Browser-based SDR receiver for the RTL-SDR Blog V3 on this Pi.
 
 - Open `http://<home-assistant-ip>:8073/` from any device on the home network.
-- Set **admin_password** in this app's Configuration tab before the first start;
-  the admin user is created on first start only. Settings page: `/settings`.
+- Set **admin_user** and **admin_password** in this app's Configuration tab, then
+  restart the app. On every start the admin user is created if missing, or its
+  password is reset to the one in the Configuration tab (so a forgotten password
+  is fixed by setting a new one there and restarting). Log in at `/login`;
+  settings page: `/settings`.
 - Only one program can use the SDR at a time: keep the rtl_433 app stopped.
 - Settings are stored in the app's /data folder, so they survive updates.
 
