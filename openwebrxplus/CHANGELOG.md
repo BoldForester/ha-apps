@@ -51,3 +51,10 @@
 - Admin login follows the app options: on every start the admin user is created if
   missing, or its password is reset to `admin_password` (and the user re-enabled).
   Fixes being locked out after forgetting or changing the password.
+
+## 0.0.11-alpha
+
+- New local profiles (added on start only if missing): FM broadcast (6 x 2.4 MHz
+  windows, 87.8-107 MHz, wide FM), DAB national multiplexes 12B / 11D / 11A,
+  ACARS / VDL2 (131-133 MHz), Meteor weather satellites (137 MHz), 433 MHz and
+  868 MHz ISM.

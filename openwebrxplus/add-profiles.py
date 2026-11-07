@@ -37,6 +37,49 @@ LOCAL_PROFILES = {
     "local-pmr446": dict(
         name="PMR446 walkie-talkies", center_freq=int(446.1 * MHZ),
         samp_rate=2400000, start_freq=446006250, start_mod="nfm", tuning_step="5000", rf_gain=40),
+    # 0.0.11: FM broadcast (wide FM). Each profile covers 2.4 MHz; with free tuning
+    # on, typing any 87.5-108 MHz frequency also moves the receiver there.
+    "local-fm-88": dict(
+        name="FM broadcast 87.8-90.2 MHz", center_freq=int(89.0 * MHZ),
+        samp_rate=2400000, start_freq=int(88.5 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    "local-fm-93": dict(
+        name="FM broadcast 91.8-94.2 MHz", center_freq=int(93.0 * MHZ),
+        samp_rate=2400000, start_freq=int(93.0 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    "local-fm-96": dict(
+        name="FM broadcast 95-97.4 MHz (BBC Radio Solent 96.1)", center_freq=int(96.2 * MHZ),
+        samp_rate=2400000, start_freq=int(96.1 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    "local-fm-99": dict(
+        name="FM broadcast 97.8-100.2 MHz", center_freq=int(99.0 * MHZ),
+        samp_rate=2400000, start_freq=int(99.0 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    "local-fm-103": dict(
+        name="FM broadcast 102.6-105 MHz (Radio Solent 103.8)", center_freq=int(103.8 * MHZ),
+        samp_rate=2400000, start_freq=int(103.8 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    "local-fm-106": dict(
+        name="FM broadcast 104.6-107 MHz (Wave 105.2)", center_freq=int(105.8 * MHZ),
+        samp_rate=2400000, start_freq=int(105.2 * MHZ), start_mod="wfm", tuning_step="100000", rf_gain=20),
+    # DAB national multiplexes (one ensemble per profile, 2.048 MS/s).
+    "local-dab-12b": dict(
+        name="DAB 12B BBC National", center_freq=225648000,
+        samp_rate=2048000, start_freq=225648000, start_mod="dab", tuning_step="1000", rf_gain=30),
+    "local-dab-11d": dict(
+        name="DAB 11D Digital One", center_freq=222064000,
+        samp_rate=2048000, start_freq=222064000, start_mod="dab", tuning_step="1000", rf_gain=30),
+    "local-dab-11a": dict(
+        name="DAB 11A Sound Digital", center_freq=216928000,
+        samp_rate=2048000, start_freq=216928000, start_mod="dab", tuning_step="1000", rf_gain=30),
+    # Aviation data and other useful bands.
+    "local-air-acars": dict(
+        name="Air: ACARS / VDL2 (130.9-133.3 MHz)", center_freq=int(132.1 * MHZ),
+        samp_rate=2400000, start_freq=131525000, start_mod="am", tuning_step="5000", rf_gain=40),
+    "local-wxsat-137": dict(
+        name="Weather satellites (Meteor-M 137 MHz)", center_freq=int(137.5 * MHZ),
+        samp_rate=2400000, start_freq=137900000, start_mod="nfm", tuning_step="1000", rf_gain=40),
+    "local-ism-433": dict(
+        name="433 MHz ISM (sensors, key fobs)", center_freq=int(433.92 * MHZ),
+        samp_rate=2400000, start_freq=433920000, start_mod="nfm", tuning_step="1000", rf_gain=30),
+    "local-ism-868": dict(
+        name="868 MHz ISM (LoRa, alarms, smart devices)", center_freq=int(868.3 * MHZ),
+        samp_rate=2400000, start_freq=868300000, start_mod="nfm", tuning_step="1000", rf_gain=40),
 }
 
 
