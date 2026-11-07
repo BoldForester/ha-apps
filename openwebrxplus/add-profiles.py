@@ -92,6 +92,24 @@ def main():
     if "sdrs" not in settings:
         settings["sdrs"] = json.loads(json.dumps(defaultConfig["sdrs"], cls=Encoder))
 
+    # 0.0.11 one-off tidy-up (only when the option asks for it, and only once):
+    # drop receivers that aren't fitted (Airspy, SDRplay from the image defaults)
+    # and the RTL shortwave profiles that need a long-wire antenna.
+    tidied = []
+    marker = SETTINGS + ".tidied-0.0.11"
+    if os.environ.get("TIDY_PROFILES", "True") != "False" and not os.path.exists(marker) and os.path.exists(SETTINGS):
+        if not os.path.exists(SETTINGS + ".before-tidy"):
+            shutil.copy2(SETTINGS, SETTINGS + ".before-tidy")
+        for sid in [k for k, s in settings["sdrs"].items() if s.get("type") in ("airspyhf", "airspy", "sdrplay")]:
+            del settings["sdrs"][sid]
+            tidied.append("device " + sid)
+        for s in settings["sdrs"].values():
+            if s.get("type") == "rtl_sdr":
+                for pid in ("10m", "40m", "80m", "160m", "am"):
+                    if s.get("profiles", {}).pop(pid, None) is not None:
+                        tidied.append("profile " + pid)
+        open(marker, "w").close()
+
     rtl = next((s for s in settings["sdrs"].values() if s.get("type") == "rtl_sdr"), None)
     if rtl is None:
         print("+++ add-profiles: no RTL-SDR device in settings, nothing added")
@@ -110,7 +128,7 @@ def main():
     if os.environ.get("ALLOW_RETUNE", "True") != "False" and not settings.get("allow_center_freq_changes"):
         settings["allow_center_freq_changes"] = True
         retune = True
-    if not added and not fixed and not retune:
+    if not added and not fixed and not retune and not tidied:
         print("+++ add-profiles: local profiles already present")
         return
     for pid in added:
@@ -122,8 +140,9 @@ def main():
     with open(tmp, "w") as f:
         json.dump(settings, f, indent=4)
     os.replace(tmp, SETTINGS)
-    print("+++ add-profiles: added %s; fixed start freq %s; free tuning %s"
-          % (", ".join(added) or "none", ", ".join(fixed) or "none", "enabled" if retune else "unchanged"))
+    print("+++ add-profiles: added %s; fixed start freq %s; free tuning %s; removed %s"
+          % (", ".join(added) or "none", ", ".join(fixed) or "none", "enabled" if retune else "unchanged",
+             ", ".join(tidied) or "nothing"))
 
 
 if __name__ == "__main__":

@@ -58,3 +58,11 @@
   windows, 87.8-107 MHz, wide FM), DAB national multiplexes 12B / 11D / 11A,
   ACARS / VDL2 (131-133 MHz), Meteor weather satellites (137 MHz), 433 MHz and
   868 MHz ISM.
+
+## 0.0.12-alpha
+
+- One-off tidy-up on first start of this version: removes the Airspy HF+ and SDRplay
+  receivers from the image defaults (not fitted) and the RTL-SDR shortwave profiles
+  (10 m, 40 m, 80 m, 160 m, AM broadcast: they need a long-wire antenna and direct
+  sampling). Backup: /data/owrx/settings.json.before-tidy. Runs once only
+  (marker settings.json.tidied-0.0.11).
